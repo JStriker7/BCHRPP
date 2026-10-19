@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="290" viewBox="0 0 1200 290">
+<rect width="1200" height="290" fill="#fff"/>
+<g font-family="Arial,Helvetica,sans-serif" fill="#182F4C">
+<text x="600" y="27" text-anchor="middle" font-size="20" font-weight="700">BCHR++ RCSE-Lite · Coupled Reliability–Complementarity Sparse Evidence Routing</text>
+<g stroke="#B3CAE6" fill="#EFF6FF" stroke-width="2">
+<rect x="18" y="76" rx="11" width="160" height="148"/>
+<rect x="225" y="76" rx="11" width="198" height="148"/>
+</g>
+<g stroke="#9DCDB7" fill="#EBF9F1" stroke-width="2">
+<rect x="470" y="76" rx="11" width="244" height="148"/>
+</g>
+<g stroke="#E8C795" fill="#FFF7E9" stroke-width="2">
+<rect x="761" y="76" rx="11" width="187" height="148"/>
+</g>
+<g stroke="#B3CAE6" fill="#EFF6FF" stroke-width="2">
+<rect x="995" y="76" rx="11" width="188" height="148"/>
+</g>
+<g text-anchor="middle" font-size="17" font-weight="600">
+<text x="98" y="111">Input</text>
+<text x="324" y="111">Local Query</text>
+<text x="324" y="132">Encoding</text>
+<text x="592" y="111">Reliability-discounted</text>
+<text x="592" y="132">Complementarity</text>
+<text x="854" y="111">Sparse</text>
+<text x="854" y="132">Association</text>
+<text x="1090" y="111">Residual</text>
+<text x="1090" y="132">Correction</text>
+</g>
+<g text-anchor="middle" font-size="14" fill="#4A6178">
+<text x="98" y="152">Text · Audio</text><text x="98" y="173">Vision + Mask</text>
+<text x="324" y="157">depthwise + Q slots</text><text x="324" y="179">shared queries</text>
+<text x="592" y="160">quality r + gated difference</text><text x="592" y="181">one shared routing π</text>
+<text x="854" y="157">Top-K messages</text><text x="854" y="179">π-guided readout</text>
+<text x="1090" y="157">fast + gated Δ</text><text x="1090" y="179">sentiment output</text>
+</g>
+<g fill="none" stroke="#527CA8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+<path d="M178 151 H218"/><path d="M211 144 L218 151 L211 158"/>
+<path d="M423 151 H463"/><path d="M456 144 L463 151 L456 158"/>
+<path d="M714 151 H754"/><path d="M747 144 L754 151 L747 158"/>
+<path d="M948 151 H988"/><path d="M981 144 L988 151 L981 158"/>
+</g>
+<path d="M592 224 V255 H1090 V224" fill="none" stroke="#40916C" stroke-dasharray="5 5" stroke-width="2"/>
+<text x="836" y="276" fill="#256847" font-size="13" text-anchor="middle">Same routing weights also control direct evidence aggregation</text>
+</g>
+</svg>

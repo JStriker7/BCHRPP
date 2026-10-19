@@ -1,0 +1,11 @@
+
+hidden_dim: 256
+batch_size: 32
+epochs: 50
+lr: 1.0e-4
+amp: true
+seed: 2026
+weight_decay: 0.01
+grad_clip: 1.0
+huber_beta: 1.0
+patience: 10

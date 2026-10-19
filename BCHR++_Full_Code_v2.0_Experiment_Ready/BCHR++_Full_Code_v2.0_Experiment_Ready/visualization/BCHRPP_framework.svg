@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="500">
+<text x="40" y="40" font-size="24">BCHR++ Pipeline</text>
+<g font-size="16">
+<rect x="40" y="100" width="120" height="60" fill="none" stroke="black"/><text x="55" y="135">Modalities</text>
+<rect x="210" y="100" width="160" height="60" fill="none" stroke="black"/><text x="225" y="135">Evidence Encoder</text>
+<rect x="420" y="100" width="160" height="60" fill="none" stroke="black"/><text x="435" y="135">Causal Hypergraph</text>
+<rect x="650" y="100" width="150" height="60" fill="none" stroke="black"/><text x="675" y="135">Arbitration</text>
+</g></svg>

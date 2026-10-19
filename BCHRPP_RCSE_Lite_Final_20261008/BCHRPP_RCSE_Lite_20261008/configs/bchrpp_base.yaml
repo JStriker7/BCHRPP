@@ -1,0 +1,11 @@
+# RCSE-Lite default: regression MOSI / CH-SIMSv2 pre-extracted features
+hidden_dim: 128
+num_queries: 4
+output_dim: 1
+task: regression
+batch_size: 16
+epochs: 60
+lr: 0.0003
+amp: false
+seed: 222
+# paper-reported benchmark performance is not implied by this configuration

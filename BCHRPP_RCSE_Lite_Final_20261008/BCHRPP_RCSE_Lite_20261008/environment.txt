@@ -1,0 +1,5 @@
+Reproducible local verification environment (2026-10-08)
+Python 3.13; torch 2.10.0+cpu; NumPy installed; PyYAML installed
+No CUDA / benchmark dataset available in this environment.
+Production requirements are in requirements.txt; install a suitable CUDA build of torch for GPU.
+Original historical MOSI checkpoint is packaged for compatibility; not newly trained.

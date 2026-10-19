@@ -1,0 +1,33 @@
+# Local tooling and generated files
+/.codex-case-deck/
+/output/
+**/output/
+**/results/
+**/checkpoints/
+**/node_modules/
+**/__pycache__/
+**/.pytest_cache/
+*.py[cod]
+*.log
+
+# Data, model artifacts, archives, and credentials
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.npy
+*.npz
+*.csv
+*.zip
+*.pptx
+*.docx
+.env
+*.pem
+*.key
+
+# Reference materials and private local handoff notes
+/English/
+/*codemap*.md
+/extract/*codemap*.md
+/*.md
+!/README.md
