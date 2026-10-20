@@ -20,7 +20,7 @@ from datasets.mosi_text_online import load_word_tokenizer
 from losses.bchrpp_loss import compute_loss
 from scripts.mosi_followup import (METRIC_KEYS, SEEDS, TRIALS, check_original_modalities,
                                    make_manifest, run_trial, sample_label_fingerprint,
-                                   train_command, variant_config)
+                                   train_command, validate_inputs, variant_config)
 from scripts.train_mosi_extract import batch_to_device, make_optimizer
 
 
@@ -81,6 +81,43 @@ class MosiFollowupTest(unittest.TestCase):
         second["valid"].samples[0]["visual_valid"] = np.zeros(2, np.float32)
         with self.assertRaisesRegex(ValueError, "visual_valid"):
             check_original_modalities(second, first)
+
+    def test_roberta_preflight_rejects_changed_original_visuals(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model_dir = root / "roberta-large"
+            model_dir.mkdir()
+            features = root / "text-large.pt"
+            reference = root / "original.pt"
+            features.write_bytes(b"candidate")
+            reference.write_bytes(b"reference")
+            splits = {split: SimpleNamespace(samples=[dict(sample(split), alignment="uniform")])
+                      for split in ("train", "valid", "test")}
+            originals = {split: SimpleNamespace(samples=[dict(item) for item in data.samples])
+                         for split, data in splits.items()}
+            meta = {"splits": {split: 1 for split in splits},
+                    "feature_models": {"text": str(model_dir)}}
+            args = Namespace(trial="roberta", features=features,
+                             reference_features=reference, expected_text_model=model_dir)
+            with patch("scripts.mosi_followup.EXPECTED_SPLITS", meta["splits"]), \
+                    patch("scripts.mosi_followup.EXPECTED_FINGERPRINT",
+                          sample_label_fingerprint(splits)), \
+                    patch("scripts.mosi_followup.check_gpu"), \
+                    patch("datasets.mosi_extract.load_mosi_extract",
+                          side_effect=[(splits, meta), (originals, meta)]):
+                report = validate_inputs(args)
+            self.assertEqual(report["splits"], meta["splits"])
+            self.assertNotEqual(report["features_sha256"],
+                                report["reference_features_sha256"])
+            originals["test"].samples[0]["visual"] = np.zeros((2, 768), np.float32)
+            with patch("scripts.mosi_followup.EXPECTED_SPLITS", meta["splits"]), \
+                    patch("scripts.mosi_followup.EXPECTED_FINGERPRINT",
+                          sample_label_fingerprint(splits)), \
+                    patch("scripts.mosi_followup.check_gpu"), \
+                    patch("datasets.mosi_extract.load_mosi_extract",
+                          side_effect=[(splits, meta), (originals, meta)]), \
+                    self.assertRaisesRegex(ValueError, "original visual was changed"):
+                validate_inputs(args)
 
     def test_masked_modality_stays_absent_from_router_and_loss(self):
         raw = {
@@ -176,6 +213,12 @@ class MosiFollowupTest(unittest.TestCase):
                     changed = dict(manifest, features_sha256="c" * 64)
                     with self.assertRaisesRegex(ValueError, "manifest differs"):
                         run_trial(args, changed)
+                    checkpoint = args.output_root / "lr_1e-5" / "mosi_lite_seed222.pt"
+                    saved = torch.load(checkpoint, map_location="cpu", weights_only=True)
+                    saved["model_config"]["text_lr"] = 9e-5
+                    torch.save(saved, checkpoint)
+                    with self.assertRaisesRegex(ValueError, "Checkpoint model differs"):
+                        run_trial(args, manifest)
             self.assertEqual(len(list(args.output_root.glob("*/summary.csv"))), 3)
             self.assertTrue((args.output_root / "comparison.csv").is_file())
 
