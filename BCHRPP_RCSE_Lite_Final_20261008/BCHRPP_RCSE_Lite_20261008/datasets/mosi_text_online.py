@@ -6,6 +6,18 @@ import torch
 from datasets.mosi_extract import MOSIExtractSplit, collate_mosi_extract
 
 
+def load_word_tokenizer(model_path, prefix_space=False):
+    from transformers import AutoTokenizer
+
+    options = {'use_fast': True, 'local_files_only': True}
+    if prefix_space:
+        options['add_prefix_space'] = True
+    tokenizer = AutoTokenizer.from_pretrained(str(model_path), **options)
+    if not tokenizer.is_fast:
+        raise ValueError('Online word alignment requires a fast tokenizer')
+    return tokenizer
+
+
 class MOSIOnlineTextSplit(MOSIExtractSplit):
     def __init__(self, samples, tokenizer):
         super().__init__(samples)

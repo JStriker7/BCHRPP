@@ -20,12 +20,12 @@ class _TextPredictionModel:
     def eval(self):
         return self
 
-    def __call__(self, text, audio, vision, masks=None):
+    def __call__(self, text, audio, vision, masks=None, text_tokens=None):
         return text[:, 0, :1]
 
 
 class _RecoverableModel(torch.nn.Module):
-    def forward(self, text, audio, vision, masks=None):
+    def forward(self, text, audio, vision, masks=None, text_tokens=None):
         return text[:, 0, :1]
 
 
@@ -41,6 +41,9 @@ class MetricsTopMosiTest(unittest.TestCase):
             "text_mask": torch.ones(6, 1, dtype=torch.bool),
             "audio_mask": torch.ones(6, 1, dtype=torch.bool),
             "vision_mask": torch.ones(6, 1, dtype=torch.bool),
+            "text_input_ids": torch.ones(6, 1, dtype=torch.long),
+            "text_attention_mask": torch.ones(6, 1, dtype=torch.long),
+            "text_word_ids": torch.zeros(6, 1, dtype=torch.long),
         }
 
         report, selection_mae = evaluate(_TextPredictionModel(), [raw], torch.device("cpu"))
@@ -76,20 +79,26 @@ class MetricsTopMosiTest(unittest.TestCase):
                 "text_mask": torch.ones(3, 1, dtype=torch.bool),
                 "audio_mask": torch.ones(3, 1, dtype=torch.bool),
                 "vision_mask": torch.ones(3, 1, dtype=torch.bool),
+                "text_input_ids": torch.ones(3, 1, dtype=torch.long),
+                "text_attention_mask": torch.ones(3, 1, dtype=torch.long),
+                "text_word_ids": torch.zeros(3, 1, dtype=torch.long),
             }
             metrics, selection = evaluate(_RecoverableModel(), [batch], torch.device("cpu"))
             old_metrics = dict(metrics)
             old_metrics["Corr"] = np.float64(old_metrics["Corr"])
             torch.save({
-                "version": VERSION, "model_state": {}, "model_config": {},
+                "version": VERSION, "model_state": {},
+                "model_config": {"text_mode": "frozen", "text_model": "fake"},
                 "epoch": 8, "valid_metrics": old_metrics,
                 "metric_protocol": METRIC_PROTOCOL, "selection_val_mae": selection,
                 "dataset": "MOSI", "seed": 222, "features": str(features.resolve()),
             }, checkpoint)
             original_bytes = checkpoint.read_bytes()
             args = Namespace(checkpoint=checkpoint, features=features, seed=222,
-                             epochs=60, patience=15, batch_size=24, num_workers=0)
-            with patch("scripts.train_mosi_extract.BCHRPP", return_value=_RecoverableModel()), \
+                             epochs=60, patience=15, batch_size=24, num_workers=0,
+                             text_mode="frozen", text_model="fake", modalities="full")
+            with patch("scripts.train_mosi_extract.model_from_config",
+                       return_value=_RecoverableModel()), \
                     patch("scripts.train_mosi_extract.make_loader", return_value=[batch]):
                 result = recover_trusted_checkpoint(
                     args, {"valid": object(), "test": object()}, torch.device("cpu")

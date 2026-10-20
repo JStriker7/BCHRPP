@@ -21,7 +21,8 @@ class MosiExtractResumeTest(unittest.TestCase):
             checkpoint = output / "mosi_lite_seed222.pt"
             checkpoint.write_bytes(b"existing checkpoint")
             argv = ["runner", "--features", str(features), "--output-dir", str(output),
-                    "--modes", "lite", "--seeds", "222,128", "--resume"]
+                    "--modes", "lite", "--seeds", "222,128", "--text-mode", "frozen",
+                    "--resume"]
 
             with patch.object(sys, "argv", argv), \
                     patch("subprocess.run") as run, \
@@ -45,6 +46,7 @@ class MosiExtractResumeTest(unittest.TestCase):
             metrics = {key: 0.5 for key in METRIC_KEYS}
             result = {
                 "dataset": "MOSI", "features": str(features), "seed": 222,
+                "text_mode": "frozen",
                 "metric_protocol": "metricsTop.py:regression/MOSI",
                 "checkpoint": str(recovered), "best_epoch": 8, "last_epoch": 23,
                 "validation": metrics, "test": metrics,
@@ -53,7 +55,8 @@ class MosiExtractResumeTest(unittest.TestCase):
             sidecar.write_text(json.dumps(result), encoding="utf8")
             (output / "results.csv").write_text("partial\n", encoding="utf8")
             argv = ["runner", "--features", str(features), "--output-dir", str(output),
-                    "--modes", "lite", "--seeds", "222,128", "--resume"]
+                    "--modes", "lite", "--seeds", "222,128", "--text-mode", "frozen",
+                    "--resume"]
 
             def finish_seed_128(cmd, **kwargs):
                 new_checkpoint = Path(cmd[cmd.index("--checkpoint") + 1])
@@ -73,7 +76,7 @@ class MosiExtractResumeTest(unittest.TestCase):
             result["features"] = str(root / "wrong.pt")
             sidecar.write_text(json.dumps(result), encoding="utf8")
             with self.assertRaisesRegex(ValueError, "does not match"):
-                load_run_result(sidecar, checkpoint, features, 222)
+                load_run_result(sidecar, checkpoint, features, 222, "frozen")
 
 
 if __name__ == "__main__":

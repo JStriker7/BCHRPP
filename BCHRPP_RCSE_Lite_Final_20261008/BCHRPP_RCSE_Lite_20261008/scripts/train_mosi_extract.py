@@ -28,7 +28,7 @@ from torch.utils.data import DataLoader
 
 from bchrpp.full_model import BCHRPP
 from bchrpp.mosi_online_text import MOSIOnlineText
-from datasets.mosi_text_online import MOSIOnlineTextSplit
+from datasets.mosi_text_online import MOSIOnlineTextSplit, load_word_tokenizer
 from losses.bchrpp_loss import compute_loss
 from metrics.metricsTop import MetricsTop
 from datasets.mosi_extract import FEATURE_DIMS, collate_mosi_extract, load_mosi_extract
@@ -36,6 +36,12 @@ from datasets.mosi_extract import FEATURE_DIMS, collate_mosi_extract, load_mosi_
 VERSION = "bchrpp_rcse_lite_online_text_v1"
 METRIC_PROTOCOL = "metricsTop.py:regression/MOSI"
 MOSI_METRIC = MetricsTop("regression").getMetics("MOSI")
+MODALITIES = {
+    "full": ("text", "audio", "vision"),
+    "no_audio": ("text", "vision"),
+    "no_vision": ("text", "audio"),
+    "text_only": ("text",),
+}
 
 
 def parser() -> argparse.ArgumentParser:
@@ -62,6 +68,11 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--seed", type=int, default=222)
     p.add_argument("--text-mode", choices=("frozen", "unfrozen"), default="frozen")
     p.add_argument("--text-lr", type=float, default=2e-5)
+    p.add_argument("--modalities", choices=tuple(MODALITIES), default="full")
+    p.add_argument("--tokenizer-prefix-space", action="store_true")
+    p.add_argument("--expected-text-model", type=Path)
+    p.add_argument("--trial-signature", default="")
+    p.add_argument("--features-sha256", default="")
     p.add_argument("--num-workers", type=int, default=0)
     p.add_argument("--amp", action="store_true")
     p.add_argument("--label-reweight", action="store_true",
@@ -95,13 +106,16 @@ def make_loader(data, batch_size, shuffle, workers):
                       pin_memory=torch.cuda.is_available())
 
 
-def batch_to_device(raw, device):
+def batch_to_device(raw, device, modalities="full"):
+    active = MODALITIES[modalities]
     return {
         "text": raw["text"].to(device),
         "audio": raw["audio"].to(device),
         "vision": raw["vision"].to(device),
         "label": raw["label"].to(device),
-        "masks": {m: raw[f"{m}_mask"].to(device) for m in ("text", "audio", "vision")},
+        "masks": {m: (raw[f"{m}_mask"] if m in active else
+                      torch.zeros_like(raw[f"{m}_mask"])).to(device)
+                  for m in ("text", "audio", "vision")},
         "text_tokens": ({key: raw[f'text_{key}'].to(device) for key in
                           ('input_ids', 'attention_mask', 'token_type_ids')
                           if f'text_{key}' in raw}, raw['text_word_ids'].to(device)),
@@ -109,11 +123,11 @@ def batch_to_device(raw, device):
 
 
 @torch.no_grad()
-def evaluate(model, loader, device):
+def evaluate(model, loader, device, modalities="full"):
     model.eval()
     predictions, labels = [], []
     for raw in loader:
-        batch = batch_to_device(raw, device)
+        batch = batch_to_device(raw, device, modalities)
         p = model(batch["text"], batch["audio"], batch["vision"], masks=batch["masks"],
                   text_tokens=batch["text_tokens"])
         predictions.append(p.cpu().reshape(-1).numpy())
@@ -142,7 +156,8 @@ def build_model(args):
         routing_temperature=args.routing_temperature,
     )
     config = {"fusion": cfg, "text_model": args.text_model, "text_mode": args.text_mode,
-              "text_lr": args.text_lr}
+              "text_lr": args.text_lr, "modalities": args.modalities,
+              "tokenizer_prefix_space": args.tokenizer_prefix_space}
     return model_from_config(config), config
 
 
@@ -154,6 +169,25 @@ def model_from_config(config):
         raise ValueError("Online text model must produce 1024-dimensional features")
     return MOSIOnlineText(encoder, BCHRPP(**config["fusion"]),
                           train_text=config["text_mode"] == "unfrozen")
+
+
+def trial_config(args):
+    return {
+        "signature": getattr(args, "trial_signature", ""),
+        "features_sha256": getattr(args, "features_sha256", ""),
+        "text_model": str(getattr(args, "text_model", "")),
+        "text_mode": getattr(args, "text_mode", "frozen"),
+        "text_lr": float(getattr(args, "text_lr", 2e-5)),
+        "modalities": getattr(args, "modalities", "full"),
+        "tokenizer_prefix_space": bool(getattr(args, "tokenizer_prefix_space", False)),
+    }
+
+
+def make_optimizer(model, args):
+    groups = [{"params": model.fusion.parameters(), "lr": args.lr}]
+    if args.text_mode == "unfrozen":
+        groups.append({"params": model.encoder.parameters(), "lr": args.text_lr})
+    return torch.optim.AdamW(groups, weight_decay=args.weight_decay)
 
 
 def label_weight_lookup(train, device):
@@ -170,15 +204,14 @@ def label_weight_lookup(train, device):
 def fit(args, splits, device):
     if args.epochs < 1 or args.batch_size < 1 or args.patience < 1:
         raise ValueError("epochs, batch size and patience must be positive")
+    if args.checkpoint.exists() or args.checkpoint.with_suffix(".json").exists():
+        raise FileExistsError(f"Existing run will not be overwritten: {args.checkpoint}")
     seed_everything(args.seed)
     loaders = {s: make_loader(splits[s], args.batch_size, s == "train", args.num_workers)
                for s in ("train", "valid", "test")}
     model, cfg = build_model(args)
     model = model.to(device)
-    groups = [{"params": model.fusion.parameters(), "lr": args.lr}]
-    if args.text_mode == "unfrozen":
-        groups.append({"params": model.encoder.parameters(), "lr": args.text_lr})
-    optim = torch.optim.AdamW(groups, weight_decay=args.weight_decay)
+    optim = make_optimizer(model, args)
     total = max(args.epochs * len(loaders["train"]), 1)
     warmup = int(total * args.warmup_ratio)
 
@@ -208,7 +241,7 @@ def fit(args, splits, device):
         model.train()
         running, seen = 0.0, 0
         for raw in loaders["train"]:
-            batch = batch_to_device(raw, device)
+            batch = batch_to_device(raw, device, args.modalities)
             sample_weights = (weights[torch.bucketize(batch["label"].reshape(-1), edges, right=True)]
                               if edges is not None else None)
             optim.zero_grad(set_to_none=True)
@@ -232,7 +265,7 @@ def fit(args, splits, device):
             n = batch["label"].shape[0]
             running += loss.detach().item() * n
             seen += n
-        val, selection_mae = evaluate(model, loaders["valid"], device)
+        val, selection_mae = evaluate(model, loaders["valid"], device, args.modalities)
         print(json.dumps({"epoch": epoch, "train_loss": round(running / seen, 6),
                           "valid": val, "lr": optim.param_groups[0]["lr"]}), flush=True)
         if selection_mae < best_mae - 1e-6:
@@ -245,18 +278,22 @@ def fit(args, splits, device):
                 "dataset": "MOSI", "seed": args.seed,
                 "text_mode": args.text_mode,
                 "features": str(args.features.resolve()),
+                "trial_config": trial_config(args),
             }, args.checkpoint)
         if epoch - best_epoch >= args.patience:
             print(f"Early stop at epoch {epoch}", flush=True)
             break
 
     ckpt = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
+    if ckpt.get("trial_config") != trial_config(args):
+        raise ValueError("Saved checkpoint does not match the current trial")
     model.load_state_dict(ckpt["model_state"])
-    test, _ = evaluate(model, loaders["test"], device)
+    test, _ = evaluate(model, loaders["test"], device, args.modalities)
     result = {
         "dataset": "MOSI", "features": str(args.features.resolve()),
         "metric_protocol": METRIC_PROTOCOL,
         "text_mode": args.text_mode,
+        "trial_config": trial_config(args),
         "seed": args.seed, "best_epoch": best_epoch, "last_epoch": last_epoch,
         "validation": ckpt["valid_metrics"], "test": test,
         "checkpoint": str(args.checkpoint),
@@ -278,18 +315,23 @@ def evaluate_checkpoint(args, splits, device):
             ckpt["model_config"].get("text_mode") != args.text_mode or
             ckpt["model_config"].get("text_model") != args.text_model):
         raise ValueError("Checkpoint features, text model, or mode do not match this run")
+    if args.trial_signature and ckpt.get("trial_config") != trial_config(args):
+        raise ValueError("Checkpoint trial configuration does not match this run")
     model = model_from_config(ckpt["model_config"]).to(device)
     model.load_state_dict(ckpt["model_state"], strict=True)
     validation, _ = evaluate(
-        model, make_loader(splits["valid"], args.batch_size, False, args.num_workers), device
+        model, make_loader(splits["valid"], args.batch_size, False, args.num_workers),
+        device, args.modalities
     )
     test, _ = evaluate(
-        model, make_loader(splits["test"], args.batch_size, False, args.num_workers), device
+        model, make_loader(splits["test"], args.batch_size, False, args.num_workers),
+        device, args.modalities
     )
     result = {
         "checkpoint": str(args.checkpoint), "epoch": ckpt.get("epoch"),
         "metric_protocol": METRIC_PROTOCOL,
         "text_mode": args.text_mode,
+        "trial_config": ckpt.get("trial_config"),
         "checkpoint_metric_protocol": ckpt.get("metric_protocol", "legacy_mosi_metrics"),
         "saved_validation": ckpt.get("valid_metrics"),
         "validation": validation, "test": test,
@@ -323,15 +365,19 @@ def recover_trusted_checkpoint(args, splits, device):
     if (ckpt["model_config"].get("text_mode") != args.text_mode or
             ckpt["model_config"].get("text_model") != args.text_model):
         raise ValueError("Checkpoint text model or mode does not match this run")
+    if getattr(args, "trial_signature", "") and ckpt.get("trial_config") != trial_config(args):
+        raise ValueError("Checkpoint trial configuration does not match this run")
     model = model_from_config(ckpt["model_config"]).to(device)
     model.load_state_dict(ckpt["model_state"], strict=True)
     validation, selection_mae = evaluate(
-        model, make_loader(splits["valid"], args.batch_size, False, args.num_workers), device
+        model, make_loader(splits["valid"], args.batch_size, False, args.num_workers),
+        device, getattr(args, "modalities", "full")
     )
     if not math.isclose(selection_mae, float(ckpt["selection_val_mae"]), rel_tol=0, abs_tol=1e-4):
         raise ValueError("Saved validation MAE differs from re-evaluation; refusing recovery")
     test, _ = evaluate(
-        model, make_loader(splits["test"], args.batch_size, False, args.num_workers), device
+        model, make_loader(splits["test"], args.batch_size, False, args.num_workers),
+        device, getattr(args, "modalities", "full")
     )
     safe = dict(ckpt)
     safe["valid_metrics"] = validation
@@ -347,6 +393,7 @@ def recover_trusted_checkpoint(args, splits, device):
         "dataset": "MOSI", "features": str(args.features.resolve()),
         "metric_protocol": METRIC_PROTOCOL, "seed": args.seed,
         "text_mode": args.text_mode,
+        "trial_config": ckpt.get("trial_config"),
         "best_epoch": best_epoch,
         "last_epoch": min(best_epoch + args.patience, args.epochs),
         "validation": validation, "test": test,
@@ -372,12 +419,14 @@ def main():
         return
     if args.text_lr <= 0:
         raise ValueError("Text learning rate must be positive")
-    from transformers import AutoTokenizer
-
     args.text_model = meta["feature_models"]["text"]
-    tokenizer = AutoTokenizer.from_pretrained(args.text_model, use_fast=True, local_files_only=True)
-    if not tokenizer.is_fast:
-        raise ValueError("Online word alignment requires a fast tokenizer")
+    if (args.expected_text_model is not None and
+            Path(args.text_model).resolve() != args.expected_text_model.resolve()):
+        raise ValueError("Feature metadata does not match --expected-text-model")
+    if args.trial_signature and (len(args.trial_signature) != 64 or
+                                 len(args.features_sha256) != 64):
+        raise ValueError("Trial signature and input SHA256 must both be 64 characters")
+    tokenizer = load_word_tokenizer(args.text_model, args.tokenizer_prefix_space)
     splits = {name: MOSIOnlineTextSplit(split.samples, tokenizer) for name, split in splits.items()}
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if args.recover_trusted_checkpoint:
