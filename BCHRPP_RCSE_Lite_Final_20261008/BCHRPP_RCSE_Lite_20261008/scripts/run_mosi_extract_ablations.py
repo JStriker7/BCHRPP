@@ -63,16 +63,19 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--topk", type=int, default=4)
     p.add_argument("--lr", type=float, default=3e-4)
     p.add_argument("--amp", action="store_true")
+    p.add_argument("--text-mode", choices=("frozen", "unfrozen"), required=True)
     p.add_argument("--resume", action="store_true",
                    help="Reuse verified per-run JSON files and continue incomplete seeds")
     return p
 
 
-def load_run_result(path: Path, checkpoint: Path, features: Path, seed: int) -> dict:
+def load_run_result(path: Path, checkpoint: Path, features: Path, seed: int,
+                    text_mode: str) -> dict:
     result = json.loads(path.read_text(encoding="utf8"))
     saved_checkpoint = Path(result["checkpoint"])
     allowed_names = {checkpoint.name, f"{checkpoint.stem}_recovered.pt"}
     if (result.get("dataset") != "MOSI" or result.get("seed") != seed or
+            result.get("text_mode") != text_mode or
             result.get("metric_protocol") != METRIC_PROTOCOL or
             Path(result["features"]).resolve() != features.resolve() or
             saved_checkpoint.name not in allowed_names or
@@ -102,7 +105,7 @@ def main() -> None:
             "or resume only an incomplete run with --resume."
         )
 
-    fieldnames = ["metric_protocol", "mode", "seed", "best_epoch", "last_epoch"] + \
+    fieldnames = ["metric_protocol", "text_mode", "mode", "seed", "best_epoch", "last_epoch"] + \
                  [f"val_{k}" for k in METRIC_KEYS] + \
                  [f"test_{k}" for k in METRIC_KEYS]
 
@@ -121,6 +124,7 @@ def main() -> None:
                    "--topk", str(args.topk),
                    "--lr", str(args.lr),
                    "--seed", str(seed),
+                   "--text-mode", args.text_mode,
                    *MODES[mode]]
             if args.amp:
                 cmd.append("--amp")
@@ -135,8 +139,9 @@ def main() -> None:
                     )
                 print(f"== RUN mode={mode} seed={seed} ==", flush=True)
                 subprocess.run(cmd, cwd=ROOT, check=True)
-            summary = load_run_result(result_path, checkpoint, args.features, seed)
+            summary = load_run_result(result_path, checkpoint, args.features, seed, args.text_mode)
             row = {"metric_protocol": summary["metric_protocol"],
+                   "text_mode": args.text_mode,
                    "mode": mode, "seed": seed,
                    "best_epoch": summary["best_epoch"],
                    "last_epoch": summary["last_epoch"]}
@@ -156,7 +161,7 @@ def main() -> None:
     for row in rows:
         by_mode.setdefault(row["mode"], []).append(row)
 
-    summary_fieldnames = ["metric_protocol", "mode", "n_seeds", "seeds",
+    summary_fieldnames = ["metric_protocol", "text_mode", "mode", "n_seeds", "seeds",
                           "val_MAE_mean", "val_MAE_std"]
     for k in TEST_KEYS:
         summary_fieldnames += [f"test_{k}_mean", f"test_{k}_std"]
@@ -166,6 +171,7 @@ def main() -> None:
         runs = by_mode[mode]
         run_seeds = [r["seed"] for r in runs]
         entry = {"metric_protocol": runs[0]["metric_protocol"],
+                 "text_mode": args.text_mode,
                  "mode": mode, "n_seeds": len(runs),
                  "seeds": ",".join(map(str, run_seeds))}
 
