@@ -1,0 +1,17 @@
+{
+  "status": "BLOCKED_FROM_FEATURE_GENERATION_AND_TRAINING",
+  "reason": "official CMU SDK explicitly deprecates previous MOSI word alignment and states improved alignment applies to raw words, not GloVe/BERT",
+  "official_source": "https://github.com/CMU-MultiComp-Lab/CMU-MultimodalSDK/blob/main/README.md",
+  "pinned_readme_sha256": "f6b79ab8bde1c018af12c5c514d633c271c70b915b70928bd30dd7826013efef",
+  "official_warning": "--> **Version 1.0.4 announced**. Special thanks to Zhun Liu and Michael Grundie. New features added to CMU-MOSI, CMU-MOSEI and POM datasets. TLDR: Word alignment on CMU-MOSI is substantially improved, therefore the language modality is now working much better - previous alignment for MOSI is now deprecated. This new alignment is not applied to GloVe and BERT, only to the raw words - **hence I removed the glove and BERT for now - if you decide to build your own BERT you should consider running BERT on each segment not on the entire video since it is a contextual word embedding.** New features including OpenFace2, OpenSmile-IS09 are also added. Computational sequences for IEMOCAP are also released (only available by proof of email from USC, the zip file is password protected). Please check the next_steps.md to see where we are going next.",
+  "blocked_sources": [
+    "mosi_csd_mirror_v1/CMU_MOSI_TimestampedWordVectors.csd",
+    "recovered_word_intervals_v1",
+    "partial_word_anchors_v1"
+  ],
+  "interpretation_of_92_percent": "exact lexical/source matching coverage only, NOT boundary accuracy or validated usable timing coverage",
+  "current_feature_dependency": "I1 and I2 use existing source media decoded PTS/sample clocks; no CSD word intervals consumed",
+  "diagnostic_artifacts_preserved": true,
+  "replacement_if_recovered": "current-author raw CMU_MOSI_TimestampedWords.csd must pass provenance, lexical and media-timing audit before any use",
+  "benchmark_transcripts_or_labels_changed": false
+}

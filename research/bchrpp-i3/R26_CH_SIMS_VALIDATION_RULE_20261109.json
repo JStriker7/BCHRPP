@@ -1,0 +1,43 @@
+{
+  "round": "R26_i3_warmselect",
+  "dataset": "CH-SIMS",
+  "baseline": "R19_i3_signnonzero",
+  "seeds": [
+    222,
+    128,
+    2026
+  ],
+  "change": "Start each seed from its hash-locked R19 checkpoint, restart optimizer, run 8 epochs at 10% of R19 learning rates. Keep loss and input unchanged and include untouched epoch 0 as a candidate under the R25 joint checkpoint rule.",
+  "checkpoint_selection": "Among epochs with raw MAE <= 102% and Acc2 >= baseline minus .005 versus the corresponding R19 seed, maximize the smaller of F1 and Acc3 improvements over the R19 three-seed means, then mean improvement, then lower raw MAE. If no eligible epoch exists, use minimum raw MAE. Fixed 8-epoch budget; include epoch 0. Candidates with exactly tied ranks retain the earlier epoch.",
+  "baseline_means": {
+    "F1_score": 0.7946,
+    "Mult_acc_3": 0.7083333333333334,
+    "Mult_acc_2": 0.7982333333333334,
+    "raw_mae": 0.3427127070428139
+  },
+  "pass": "F1 and Acc3 each +0.5 percentage points or more; Acc2 loses at most 0.5 percentage points; raw MAE <= 102% of R19.",
+  "test_used_for_selection": false,
+  "rationale": "R25 Acc3 gained 0.513 pp but F1 gained only 0.247 pp and raw MAE rose 2.085%. Two seeds exceeded their seed-matched MAE guards. Test whether local fine-tuning around verified R19 weights instead of retraining makes the joint checkpoint selection more stable.",
+  "seed_reference": {
+    "222": [
+      0.3378434323199224,
+      0.7982
+    ],
+    "128": [
+      0.3499090283774166,
+      0.7895
+    ],
+    "2026": [
+      0.3403856604311027,
+      0.807
+    ]
+  },
+  "initialization_checkpoint_sha256_by_seed": {
+    "222": "8f1fa6f4342045ea0a77eae34b068483c0f6833210a3dbfcefc98a19d4799807",
+    "128": "18b7e27cc42e4468402b2f2d2bebe77916a1fa3089a434cc79ff7cbfa7884426",
+    "2026": "276cea0e1a1b37c917d4abf8903a70f6246b4e202c7b7cdca5cb80d1c5bb28ab"
+  },
+  "max_epochs": 8,
+  "fusion_lr": 3e-05,
+  "text_lr": 1e-06
+}

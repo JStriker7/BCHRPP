@@ -1,0 +1,65 @@
+{
+  "feature_version": "I3_grouped_coverage_v1",
+  "engineering_checks_passed": true,
+  "validation_guard_passed": true,
+  "validation_guard": "same operational safeguard as earlier I1: equal-weight mean ratio to I0<1 and each dataset mean regression<=2%; does not define statistical significance or a superiority claim",
+  "per_dataset_mean_ratio_to_I0": {
+    "mosi": 1.0011718714132627,
+    "sims": 0.9743170886973135
+  },
+  "equal_weight_mean_ratio_to_I0": 0.9877444800552881,
+  "selected_for_next_model_stage": true,
+  "training_control": "grouped_control_init_v3; preserved original seed core, new feature-channel weightszero",
+  "datasets": [
+    "mosi",
+    "sims"
+  ],
+  "test_scores_used": false,
+  "word_alignment": "NOT required/claimed by current independent-native-time input. Deprecated GloVe intervals BLOCKED. Updated author raw-word timestamp file remains unavailable.",
+  "remaining_external_metadata_gap": "no usable full official word/character timestamps; current feature extraction has no dependency on them",
+  "evidence": {
+    "mosi": {
+      "grouped_features_v1/manifest.json": "dee0f1dd574f4d045826ffbaeb5aa44aa3470ed190d1804172ecb38b8c69f60c",
+      "grouped_features_v1/INTEGRITY_REPORT.json": "39b1e2a9658da4c7d01cd0b1de1925c042a788ca9ae22e25bd02e87bf6813877",
+      "grouped_features_v1/FEATURE_SHA256.json": "2aefaab55daa7c1dae853bc19a78ecb35b15cb6dd2f20c1a7c6613bf2a5ad528",
+      "grouped_control_init_v3/THREE_SEED_REPORT.json": "3ebdb29b21fabb824f95628507587b02137471692af5e5c4047231aa547f1ec1",
+      "grouped_control_init_v3/SOURCE_CHANGE_LOCK.json": "cfdf920bdcfd7213dbfb2c23c1a22901bf99162842cfa8a6c888ecf5adc0c3a9",
+      "grouped_control_v1/MASK_CONTRACT.json": "3dafbb0861ee221ba5d5764f9f9284a0e1b9abc22a3389218363e0aaf49eb28a",
+      "grouped_control_v1/ABORTED_FOR_INIT_CONFOUND.json": "df42a0053d53983167b24f3addc8402f6b36c1f3ed83f92b44eef28dcc20f32c",
+      "portable_archive": {
+        "file": "I3_grouped_mosi_20261106.tar",
+        "bytes": 259215360,
+        "sha256": "44013c9d8ea848d3144a5e82c0b0eee75ae44b2c51b30e9bc4f423af020efe74",
+        "local_archive_sha256": "44013c9d8ea848d3144a5e82c0b0eee75ae44b2c51b30e9bc4f423af020efe74",
+        "all_npz_component_hashes_verified": true,
+        "samples": 2199
+      }
+    },
+    "sims": {
+      "grouped_features_v1/manifest.json": "f2055d8b50ae135292e3f1f2fca535cf2cad12d567fbc3f3019fc802d5c20bd0",
+      "grouped_features_v1/INTEGRITY_REPORT.json": "af5648a7e295a154ae4d23d08f5d56b3c01382dd1061dc514728e8159ae01a8b",
+      "grouped_features_v1/FEATURE_SHA256.json": "0ff8550150305bb0a6971cd4e55e5e975141b3a46e0469dbdae8bad5cd30a36a",
+      "grouped_control_init_v3/THREE_SEED_REPORT.json": "67b5294831f241a9c5566b9bc290b1c446910309f4424a0dea29ea6393df9861",
+      "grouped_control_init_v3/SOURCE_CHANGE_LOCK.json": "cfdf920bdcfd7213dbfb2c23c1a22901bf99162842cfa8a6c888ecf5adc0c3a9",
+      "grouped_control_v1/MASK_CONTRACT.json": "3dafbb0861ee221ba5d5764f9f9284a0e1b9abc22a3389218363e0aaf49eb28a",
+      "grouped_control_v1/ABORTED_FOR_INIT_CONFOUND.json": "bfe174c485a8d1efad80f2f068c5f776e2fe44edd3534320bc6e4c3346f3f4c6",
+      "portable_archive": {
+        "file": "I3_grouped_sims_20261106.tar",
+        "bytes": 233461760,
+        "sha256": "dfd86e6732f444a3894a1f87d0f4c4df69c0ae416d92d29d10eb7a1813feb39a",
+        "local_archive_sha256": "dfd86e6732f444a3894a1f87d0f4c4df69c0ae416d92d29d10eb7a1813feb39a",
+        "all_npz_component_hashes_verified": true,
+        "samples": 2281
+      }
+    }
+  },
+  "standalone_raw_reproduction": {
+    "each_dataset_samples": 6,
+    "all_arrays_bitwise_equal": true,
+    "raw_and_AV_weights_verified": true,
+    "evidence_sha256": {
+      "mosi": "a153b9027c27ab0b0c89e465be2b76c439d49acddea9d7ba9d420395119e11c7",
+      "sims": "4375c9ade7f883476fbe7ea0f1d383bb0c9b6fea3b438883075206247dba7392"
+    }
+  }
+}

@@ -1,0 +1,3 @@
+*.py -text
+* whitespace=cr-at-eol,-blank-at-eof
+legacy499/cica_metricsTop.py whitespace=cr-at-eol,-blank-at-eol,-blank-at-eof
