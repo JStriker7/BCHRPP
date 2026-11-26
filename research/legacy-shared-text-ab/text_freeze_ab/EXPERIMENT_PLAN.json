@@ -1,0 +1,14 @@
+{
+  "priority": "only full text freeze switch",
+  "arms": [
+    "frozen",
+    "unfrozen_all_layers"
+  ],
+  "shared": "legacy SIMS core, normalization, CLSskip, loss, fusion initialization and train schedule",
+  "encoder_dropout": "disabled in both arms to isolate weight updates",
+  "pretrain": "5epochs identical frozen text; joint stage changes requires_grad only",
+  "joint": "20epochs patience5; batch16; fusionLR.0003 textLR.00001",
+  "report": "both datasets2arms,3seeds each; testmetricsmean/sampleSD andseedrows",
+  "other_screens": "preserved; no new schedules",
+  "status": "launching"
+}

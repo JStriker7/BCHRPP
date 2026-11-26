@@ -1,0 +1,73 @@
+{
+  "split": "test",
+  "seeds": [
+    222,
+    128,
+    2026
+  ],
+  "individual": [
+    {
+      "seed": 222,
+      "test": {
+        "Mult_acc_2": 0.8687,
+        "Mult_acc_3": 0.7484,
+        "Mult_acc_5": 0.5011,
+        "F1_score": 0.8699,
+        "MAE": 0.3243,
+        "Corr": 0.7838,
+        "Acc2_zero_positive": 0.8052516411378556,
+        "F1_zero_positive": 0.7996001316347767
+      },
+      "checkpoint_sha256": "1dfa3da9ff8c135d4d290e0e854504c63806b92d86a608ff72ab2eed9cedd225"
+    },
+    {
+      "seed": 128,
+      "test": {
+        "Mult_acc_2": 0.8753,
+        "Mult_acc_3": 0.7527,
+        "Mult_acc_5": 0.523,
+        "F1_score": 0.8765,
+        "MAE": 0.314,
+        "Corr": 0.7906,
+        "Acc2_zero_positive": 0.8074398249452954,
+        "F1_zero_positive": 0.8020078978250698
+      },
+      "checkpoint_sha256": "4570c3621399649d0c9ebbe4b53d9b89a21ebb8a8e71f5b201f0da5efcbe2fdc"
+    },
+    {
+      "seed": 2026,
+      "test": {
+        "Mult_acc_2": 0.8403,
+        "Mult_acc_3": 0.7396,
+        "Mult_acc_5": 0.488,
+        "F1_score": 0.8448,
+        "MAE": 0.3288,
+        "Corr": 0.7805,
+        "Acc2_zero_positive": 0.824945295404814,
+        "F1_zero_positive": 0.8231697709324686
+      },
+      "checkpoint_sha256": "91ba87d056b55b10015365e28ee1229cde968364f694481bae35612fe1493c49"
+    }
+  ],
+  "means": {
+    "Mult_acc_2": 0.8614333333333334,
+    "Mult_acc_3": 0.7469,
+    "Mult_acc_5": 0.5040333333333333,
+    "F1_score": 0.8637333333333334,
+    "MAE": 0.32236666666666663,
+    "Corr": 0.7849666666666667,
+    "Acc2_zero_positive": 0.812545587162655,
+    "F1_zero_positive": 0.8082592667974383
+  },
+  "sample_sd": {
+    "Mult_acc_2": 0.018597132395434843,
+    "Mult_acc_3": 0.006677574409918611,
+    "Mult_acc_5": 0.017683419729603602,
+    "F1_score": 0.016725529388731848,
+    "MAE": 0.007587050371081845,
+    "Corr": 0.005150080905513351,
+    "Acc2_zero_positive": 0.010794054403317793,
+    "F1_zero_positive": 0.012968873685765643
+  },
+  "historical_test_nonblind": true
+}

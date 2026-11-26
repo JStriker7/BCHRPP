@@ -1,0 +1,39 @@
+{
+  "dataset": "MOSI",
+  "reference": "SIMS legacy frozen encoder pipeline restored 20261125",
+  "seeds": [
+    222,
+    128,
+    2026
+  ],
+  "encoders": {
+    "text": "English RoBERTa-large frozen",
+    "audio": "English HuBERT-large frozen",
+    "vision": "same CLIP ViT-L/14 frozen"
+  },
+  "shared_unchanged": [
+    "fusion model source",
+    "CLS text skip source",
+    "train-only channel normalization valid frames",
+    "5 unimodal pretrain epochs",
+    "joint regression objective",
+    "batch16 LR3e-4 AdamW weight_decay.01",
+    "20 maximum joint epochs patience5",
+    "minimum validation MAE checkpoint selection"
+  ],
+  "dataset_adapter_changes": [
+    "English tokenizer and max token length fit from train/valid raw text up to512; no silent truncation",
+    "MOSI labels [-3,3]",
+    "no independent unimodal labels: pretrain and auxiliary targets use overall TRAIN label",
+    "MOSI official metrics incl Has0/Non0 and Acc7"
+  ],
+  "evaluation": "three seed checkpoints and feature/config/source hashes locked before test encoding and scoring; test never selects model",
+  "baseline_test": {
+    "Has0_acc_2": 0.8736666667,
+    "Has0_F1_score": 0.8730333333,
+    "Mult_acc_7": 0.5019333333,
+    "MAE": 0.5764666667,
+    "Corr": 0.8690666667
+  },
+  "status": "prepared"
+}
